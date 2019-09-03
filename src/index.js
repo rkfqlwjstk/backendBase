@@ -10,6 +10,8 @@ const api = require('./api');
 const mongoose = require('mongoose');
 const bodyParser = require('koa-bodyparser');
 
+const { jwtMiddleware } = require('lib/token');
+
 mongoose.Promise = global.Promise; // Node 의 네이티브 Promise 사용
 // mongodb 연결
 mongoose.connect(process.env.MONGO_URI).then(
@@ -32,6 +34,20 @@ app.use(async ctx => {
     ctx.body = ctx.request.body;
 });
 
+app.use(bodyParser()); // 바디파서 적용, 라우터 적용코드보다 상단에 있어야합니다.
+app.use(jwtMiddleware);
+router.use('/api', api.routes()); // api 라우트를 /api 경로 하위 라우트로 설정
+app.use(router.routes()).use(router.allowedMethods());
+
 app.listen(port, () => {
     console.log('heurm server is listening to port ' + port);
+});
+
+const jwt = require('jsonwebtoken');
+const token = jwt.sign({ foo: 'bar' }, 'secret-key', { expiresIn: '7d' }, (err, token) => {
+    if(err) {
+        console.log(err);
+        return;
+    }
+    console.log(token);
 });
